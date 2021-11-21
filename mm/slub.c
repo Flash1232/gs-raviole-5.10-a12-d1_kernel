@@ -1613,6 +1613,9 @@ static inline bool slab_free_freelist_hook(struct kmem_cache *s,
 		object = next;
 		next = get_freepointer(s, object);
 
+		if (s->ctor)
+			s->ctor(object);
+
 		/* If object's reuse doesn't have to be delayed */
 		if (!slab_free_hook(s, object, slab_want_init_on_free(s))) {
 			/* Move object to the new freelist */
@@ -1620,6 +1623,17 @@ static inline bool slab_free_freelist_hook(struct kmem_cache *s,
 			*head = object;
 			if (!*tail)
 				*tail = object;
+		} else if (slab_want_init_on_free(s) && s->ctor) {
+			/* Objects that are put into quarantine by KASAN will
+			 * still undergo free_consistency_checks() and thus
+			 * need to show a valid freepointer to check_object().
+			 *
+			 * Note that doing this for all caches (not just ctor
+			 * ones, which have s->offset != NULL)) causes a GPF,
+			 * due to KASAN poisoning and the way set_freepointer()
+			 * eventually dereferences the freepointer.
+			 */
+			set_freepointer(s, object, NULL);
 		}
 	} while (object != old_tail);
 
@@ -4153,7 +4167,11 @@ size_t __ksize(const void *object)
 	page = virt_to_head_page(object);
 
 	if (unlikely(!PageSlab(page))) {
+#ifdef CONFIG_PANIC_ON_DATA_CORRUPTION
+		BUG_ON(!PageCompound(page));
+#else
 		WARN_ON(!PageCompound(page));
+#endif
 		return page_size(page);
 	}
 
