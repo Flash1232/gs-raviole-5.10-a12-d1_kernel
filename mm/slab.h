@@ -373,6 +373,9 @@ static inline void memcg_slab_post_alloc_hook(struct kmem_cache *s,
 	for (i = 0; i < size; i++) {
 		if (likely(p[i])) {
 			page = virt_to_head_page(p[i]);
+#ifdef CONFIG_SLAB_HARDENED
+			BUG_ON(!PageSlab(page));
+#endif
 
 			if (!page_has_obj_cgroups(page) &&
 			    memcg_alloc_page_obj_cgroups(page, s, flags)) {
@@ -409,6 +412,10 @@ static inline void memcg_slab_free_hook(struct kmem_cache *s_orig,
 			continue;
 
 		page = virt_to_head_page(p[i]);
+#ifdef CONFIG_SLAB_HARDENED
+		BUG_ON(!PageSlab(page));
+#endif
+
 		if (!page_has_obj_cgroups(page))
 			continue;
 
@@ -510,8 +517,12 @@ static inline struct kmem_cache *cache_from_obj(struct kmem_cache *s, void *x)
 	cachep = virt_to_cache(x);
 	if (WARN(cachep && cachep != s,
 		  "%s: Wrong slab cache. %s but object is from %s\n",
-		  __func__, s->name, cachep->name))
+		  __func__, s->name, cachep->name)) {
+#ifdef CONFIG_PANIC_ON_DATA_CORRUPTION
+		BUG_ON(1);
+#endif
 		print_tracking(cachep, x);
+	}
 	return cachep;
 }
 
