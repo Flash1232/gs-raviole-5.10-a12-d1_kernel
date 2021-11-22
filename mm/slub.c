@@ -2963,6 +2963,11 @@ redo:
 		kasan_poison_object_data(s, object);
 	}
 	init = slab_want_init_on_alloc(gfpflags, s);
+	if (s->ctor) {
+		kasan_unpoison_object_data(s, object);
+		s->ctor(object);
+		kasan_poison_object_data(s, object);
+	}
 
 out:
 	slab_post_alloc_hook(s, objcg, gfpflags, 1, &object, init);
@@ -3436,8 +3441,7 @@ int kmem_cache_alloc_bulk(struct kmem_cache *s, gfp_t flags, size_t size,
 		}
 	}
 	bool init = slab_want_init_on_alloc(flags, s);
-
-  for (k = 0; k < i; k++) {
+	for (k = 0; k < i; k++) {
 		check_canary(s, p[k], s->random_inactive);
 		set_canary(s, p[k], s->random_active);
 	}
