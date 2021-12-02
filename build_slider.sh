@@ -8,6 +8,7 @@ function exit_if_error {
   fi
 }
 
+BUILD_KERNEL=1
 EXPERIMENTAL_BUILD=${EXPERIMENTAL_BUILD:-0}
 TRIM_NONLISTED_KMI=${TRIM_NONLISTED_KMI:-1}
 LTO=${LTO:-thin}
@@ -15,7 +16,7 @@ KMI_SYMBOL_LIST_STRICT_MODE=${ENABLE_STRICT_KMI:-1}
 DEFAULT_CONFIG="private/gs-google/build.config.slider"
 DEVICE_KERNEL_BUILD_CONFIG=${DEVICE_KERNEL_BUILD_CONFIG:-${DEFAULT_CONFIG}}
 GKI_KERNEL_PREBUILTS_DIR=
-GKI_KERNEL_BUILD_CONFIG=
+GKI_KERNEL_BUILD_CONFIG="private/gs-google/build.config.slider"
 GKI_KERNEL_OUT_DIR=
 CHECK_DIRTY_AOSP=0
 if [ -z "${BUILD_KERNEL}" ]; then
@@ -37,7 +38,7 @@ else
     GKI_KERNEL_BUILD_CONFIG=common/build.config.gki.aarch64
   else
     GKI_KERNEL_OUT_DIR=android12-5.10
-    GKI_KERNEL_BUILD_CONFIG=aosp/build.config.gki.aarch64
+   # GKI_KERNEL_BUILD_CONFIG=aosp/build.config.gki.aarch64
   fi
 fi
 
